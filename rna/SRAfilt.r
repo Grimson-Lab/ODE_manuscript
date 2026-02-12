@@ -12,7 +12,7 @@ args <- commandArgs(trailingOnly = T)
 rna <- read.table(args[1], header = T, sep = "\t")
 
 # Read in the ATAC-seq metadata file
-atac <- read.table("atac/SraRunTable_immgenATAC.tab", header = T, sep = "\t")
+atac <- read.table("atac/immgen/SraRunTable_immgenATAC.tab", header = T, sep = "\t")
 
 # Identify which RNA-seq samples are present in the ATAC-seq
 b <- with(rna, which( gsub("_[1-9]", "", label) %in% gsub("_[1-9]", "", atac$label) ))

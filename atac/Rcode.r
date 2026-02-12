@@ -5,7 +5,7 @@ suppressPackageStartupMessages({
 })
 
 
-txdb <- GenomicFeatures::makeTxDbFromGFF("/workdir/jdc397/1_currentWork/8_teCactus/00_clean/1_data/1_atac/mm10.refseqCurated.gtf")
+txdb <- GenomicFeatures::makeTxDbFromGFF("../mm10.refseqCurated.gtf")
 tss <- promoters(txdb, upstream = 3, downstream = 0)
 write.table( unique(as.data.frame(tss)[,c(1:3)]), file = "refSeqCurated_tss.bed", row.names = F, col.names = F, quote = F, sep = "\t")
 

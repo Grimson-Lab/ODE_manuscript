@@ -4,10 +4,10 @@
 # Use the first and second parameters to specify the specific "SRAfilt" R script, the input to that script, and the output directory for 
 # everything!
 # 
-# Expected script call
+# Expected script call (from "ODE_manuscript directory")
 # sh analysis_script [R code name] [R code input] [R code output] [output directory] 
 
-### NOTE: For the RNA-seq data, you downloaded the metadata from the SRA Run Selector (https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA429735&o=acc_s%3Aa)
+### NOTE: For the above data, you downloaded the metadata from the SRA Run Selector (https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA429735&o=acc_s%3Aa)
 ### and then *manually* linked the SRA numbers to the sample names from ImmGen in their Yoshida et al 2019 paper. That file is "SraRunTable_immgenRNA.tab"
 
 #########################################
@@ -16,6 +16,9 @@
 
 # Start by making the directory to put the files in *if* it doesn't already exist
 mkdir -p $4
+
+# Use an R script to load in the SRA run selector datasets to then use awk to create all the run files
+Rscript --vanilla "${4}"/"${1}" "${4}"/"${2}" "${4}"/"${3}"
 
 # Automate picking a number of cores to use that won't crash the server... "cores" is the number of parallel jobs, and "cores2" is the number
 # of cores per each individual job
@@ -58,7 +61,7 @@ echo "Starting the trimming..."
 echo "########################"
 
 # Write the trim commands to a file and then run those commands using parallel. Check to make sure the length is approximately 25% of the total
-# read size, using the power of variables and math
+# read size (usually given as full read size, not the size of each mate), using the power of variables and math
 awk -v a=$cores2 -v b=$4 '{FS="\t"; OFS=""; if ( NR != 1 ) { print "trim_galore -j " a " --stringency 4 --length " int($2 / 8 + 0.5) " --paired -o " b "/trim " b "/" $3 "a.fq.gz " b "/" $3 "b.fq.gz --fastqc_args \"--outdir " b "/trim/fastqc/\" 2>/dev/null"} }' < "${4}"/"${3}" > "${4}"/trim_cmds
 parallel -j $cores < "${4}"/trim_cmds
 
@@ -84,6 +87,9 @@ echo "#####################"
 echo "Starting alignment..."
 echo "#####################"
 
+# Check to make sure the .gtf file is uncompressed for the below STAR command
+if [ -f mm10.refseqCurated.gtf.gz ]; then gunzip mm10.refseqCurated.gtf.gz; fi
+
 # Populate the command file and then align using parallel 
 > "${4}"/star_cmds
 for f in $(ls "${4}"/trim/*val*.gz | sed 's/[a-b]_val_[1-2].fq.gz//' | uniq)
@@ -100,6 +106,7 @@ echo "#####################"
 echo "Finished alignment..."
 echo "#####################"
 
+
 # State the current task
 echo "##############################"
 echo "Starting merging & deduping..."
@@ -108,7 +115,7 @@ echo "##############################"
 # Check to see if you have any replicates for the paired-end reads. If not, don't merge. Otherwise, merge
 
 # Now that you have the aligned data, merge all of the replicates (if present) and then run Picard to remove the PCR/Optical duplicates as 
-# well as filter out all of the reads that align to the gross blacklist regions and chrM/Y since they're more of a pain to deal with
+# well as filter out all of the reads that align to the gross blacklist regions and chrM/Y
 > "${4}"/picard_cmds
 for f in $(ls "${4}"/STAR/*Aligned.sortedByCoord.out.bam | sed 's/_[1-9]Aligned.*//g' | uniq)
 do 
@@ -126,12 +133,6 @@ parallel -j $cores < "${4}"/picard_cmds
 echo "##############################"
 echo "Finished merging & deduping..."
 echo "##############################"
-
-# Remove the temporary files for paired-end data
-# rm "${4}"/STAR/*_tmp.bam "${4}"/STAR/*Aligned.sortedByCoord.out.bam "${4}"/STAR/*_merge.bam "${4}"/STAR/.*.progress.out "${4}"/STAR/.*Log.out
-
-# Remove all the folders you don't need
-# rm -R "${4}"/STAR/*_STARpass1 "${4}"/STAR/*_STARgenome
 
 # Now remove all the original .fq.gz files and trimmed .fq.gz files
 rm "${4}"/*.fq.gz "${4}"/trim/*.fq.gz "${4}"/STAR/*.tab  
