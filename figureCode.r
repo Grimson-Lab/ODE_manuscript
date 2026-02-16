@@ -1039,7 +1039,8 @@ skip.streams <- function(n) {
 # Get a subset of all the relevant ode-associated peak-gene linkages
 filt <- arrange(subset(cor.mat.filt, (filt.abc == T | filt.s == T) & abs(dist) > 1000 & g1 %in% c("orr1e", "orr1d2")), desc(abs(cor.s)))
 
-# Load in the HSC pathways, but remove the neutrophil-derived groups since those aren't present in your cells
+# Load in the cell type pathways you got from a cool CITE-seq paper (https://www.sciencedirect.com/science/article/pii/S2211124723003157?via%3Dihub) 
+# but remove the neutrophil-derived groups since those aren't present in your cells
 newGO <- gmtPathways("atac/Konturek-Ciesla - 2023 - HSPC marker genes.txt")
 newGO <- newGO[!grepl("Neu", names(newGO))]
 
@@ -1394,7 +1395,7 @@ for (f in l) {
 mvh <- tmp; rm(l, tmp, a)
 
 # Load the look-up-table that contains the samples you'll use for each different cell type in mouse and human
-# load.lbzip2(file = "rObject_lut.hm.RDataFS", n.cores = 2)
+# load.lbzip2(file = "orthology/rObject_lut.hm.RDataFS", n.cores = 2)
 
 # Get that color palette ready (with an extra value for all other genes!) 
 col.c <- c(tableau_color_pal(type = "ordered-diverging", palette = "Sunset-Sunrise Diverging")(7), "gray69", "gray51") 
@@ -1604,26 +1605,150 @@ rm(meta, a, s, f, fl, pc.avg, pc.out, col.c, ode)
 
 ## B
 
-# Load in the packages you'll need for dealing with *all* the correlations
+# Load in the packages you'll need for dealing with orthologous ODE sequence between mouse and rat the correlations
 suppressPackageStartupMessages({
 	library(fastSave); library(tidyr); library(dplyr); library(doParallel); library(stringr); library(ggthemes); library(scales); library(ggplot2)
+	library(Biostrings); library(ComplexHeatmap)
 })
 
-### NOTE: The below output is created from running blast between mm10 and rn7 on the ODEs with accessibility across the ImmGen data. The Unix
-### and R code for everything that entails can be found in the "blast" directory 
+# Generate some objects that will contain the look-up table that you need to go from genomic to consensus coordinates for ORR1E and ORR1D2!
+comb <- readDNAStringSet("orthology/ode_s1000.fa"); rn7 <- readDNAStringSet("ode_s1000_match_rn7.fa")
+
+# Read in the created substitution matrix to recapitulate the NEEDLE alignments
+dnafull <- as.matrix(read.table("rm/DNAfull.mat", header = T))
+
+res <- mclapply(1:length(rn7), function(i) {
+	test <- pairwiseAlignment(rn7[i], comb[which(names(comb) == names(rn7)[i])], substitutionMatrix = dnafull, gapOpening = 10, gapExtension = -0.5, type = "global")
+	val <- as.data.frame(matrix(0,nrow=2,ncol=width(alignedPattern(test))), row.names = c(names(rn7[i]), "mm10"))
+	val[1,] <- as.matrix(alignedPattern(test)); val[2,] <- as.matrix(alignedSubject(test))
+	return(val)
+}, mc.cores = 12)
+
+# The difference here is that you only want to know where the rat equivalent matches up with the mouse version. liftOver is quite lenient when
+# it comes to providing an equivalent sized region, so you want to trim it down to what actually matters
+bool <- as.data.frame(matrix(0,nrow=length(rn7),ncol=max(width( comb[ which(names(comb) %in% names(rn7)) ] ))), row.names = names(rn7))
+lut <- as.data.frame(matrix(-1,nrow=length(rn7),ncol=max(width( comb[ which(names(comb) %in% names(rn7)) ] ))), row.names = names(rn7))
+tmp <- mclapply(1:nrow(lut), function(f) {
+	cc <- 0; cb <- 1; cr <- 0; val <- list(lut[f,],bool[f,]); clen <- width(comb[ which(names(comb) == rownames(lut)[f]) ])
+	while ( cc < clen ) {
+		if ( res[[f]][1,cb] != "-" ) { # rat sequence is *not* gapped, increment the counter
+			cr <- cr + 1
+		}
+
+		if ( res[[f]][2,cb] != "-" ) { # mm10 sequence is *not* gapped, append!
+			cc <- cc + 1
+			if ( res[[f]][1,cb] == "-" ) { # rat sequence is gapped
+				m <- 0
+			} else { # No gaps between mouse and rat
+				if ( res[[f]][1,cb] == res[[f]][2,cb] ) { # check to see if the current rat sequence is identical to the mouse sequence. 
+					m <- 1
+				} else { # it's not the same, so false
+					m <- -1
+				}
+			}
+
+			# Mark the current mouse sequence with whatever it currently is in rat
+			val[[1]][1,cc] <- cr
+
+			# Mark whether the current mouse base matches the sequence in rat, or has no matching sequence at all...
+			val[[2]][1,cc] <- m
+		} 
+
+		# Append the current position in the alignment
+		cb <- cb + 1
+	}
+	return(val)
+}, mc.cores = 12)
+lut <- bind_rows(lapply(tmp, `[[`, 1))
+bool <- bind_rows(lapply(tmp, `[[`, 2))
+rm(tmp)
+
+# Start by reading in the list of ORR1 intervals 
+ode <- read.table("atac/rObject_ode.txt", sep = "\t", header = T); ode$cpm.c <- factor(ode$cpm.c, levels = 1:8); ode$peak <- gsub(".*\\|", "", ode$pid)
+
+# Load in the file that has all of the start and stop (relative to mm10) to filter each syntenic match for motif enrichment
+a <- read.table("orthologyode_blast_s1000.bed"); a$stop <- unlist(mclapply(1:nrow(lut), function(i){sum(lut[i,] != "-1")-1000}, mc.cores = 12))
+a$flank <- unlist(mclapply(1:nrow(a), function(i){ 
+	b <- 0
+
+	# Left flank math
+	if ( a[i,"V7"] < 1000 ) { 
+		if ( a[i,"V8"] >= 1000 ) { b <- b + 1001 - a[i,"V7"] }
+		if ( a[i,"V8"] < 1000 ) { b <- b + ( a[i,"V8"] - a[i,"V7"] + 1 ) }	 
+	} 
+	# Right flank math
+	if ( a[i,"V8"] > a[i,"stop"] ) { 
+		if ( a[i,"V7"] <= a[i,"stop"] ) { b <- b + ( a[i,"V8"] - a[i,"stop"] + 1 ) } 
+		if ( a[i,"V7"] > a[i,"stop"] ) { b <- b + ( a[i,"V8"] - a[i,"V7"] + 1 ) } 
+	}
+
+	# Return the amount of sequence in either flank
+	return( b )
+}, mc.cores = 16) )
+
+a$ele <- unlist(mclapply(1:nrow(a), function(i){ 
+	# Determine what value to use as the beginning 
+	if ( a[i,"V7"] <= 1001 ) { # The start includes the full beginning of the element. Use 1001 as the beginning
+		beg <- 1000 
+	} else { # The start does not include the full beginning of the element. Use start as the beginning
+		beg <- a[i,"V7"] - 1
+	}
+
+	# Determine what value to use as the end
+	if ( a[i,"V8"] >= a[i,"stop"] ) { # The end extends beyond the stop boundary. Use stop as the end of the element
+		e <- a[i,"stop"]
+	} else { # The end does not include the stop boundary. Use end as the end of the element
+		e <- a[i,"V8"]
+	}
+
+	# Return the amount of sequence in the syntenic ODE
+	if ( e - beg > 0 ) { return( e - beg ) } else { return( 0 ) }
+
+}, mc.cores = 16) )
+
+# Finally, figure out which elements to filter and which to keep
+a$filt <- with(a, ifelse( ele > (stop - 1000) / 2 & flank >= 500, "pass", "fail" ) )
+
+# Generate some objects that will contain the look-up table that you need to go from genomic to consensus coordinates for ORR1E and ORR1D2!
+rn7 <- readDNAStringSet("orthology/ode_blast_s1000.fa")
+
+# For each cluster, iterate through all of the elements, subseq them, and then write them to .fa file
+for (f in 1:8) {
+
+	s <- subset(ode, repName == "ORR1E" & cpm.c == f & id %in% rownames(lut) & id %in% subset(a, filt == "pass")$V4); it <- unique(s$id)
+	s1 <- DNAStringSet()
+	for (g in it) {
+		h <- subset(s, id == g)[1,]; if ( lut[ g, 1000 ] == 0 ) { i <- 1 } else { i <- lut[ g, 1000 ] }
+		s1 <- c(s1, subseq( rn7[g], start = i, end = lut[ g, subset(a, V4 == g)[1,"stop"] ] ) )
+	}
+	writeXStringSet(s1, paste0("orthology/ORR1E_blast_cpm.c_", f, ".fa"))
+
+	if (f < 7) {
+		s <- subset(ode, repName == "ORR1D2" & cpm.c == f & id %in% rownames(lut) & id %in% subset(a, filt == "pass")$V4); it <- unique(s$id)
+		s1 <- DNAStringSet()
+		for (g in it) {
+			h <- subset(s, id == g)[1,]; if ( lut[ g, 1000 ] == 0 ) { i <- 1 } else { i <- lut[ g, 1000 ] }
+			s1 <- c(s1, subseq( rn7[g], start = i, end = lut[ g, subset(a, V4 == g)[1,"stop"] ] ) )
+		}
+		writeXStringSet(s1, paste0("orthology/ORR1D2_blast_cpm.c_", f, ".fa"))
+	}
+}
+
+
+### NOTE: The below output is created from running blast between mm10 and rn7 on the ODEs with accessibility across the ImmGen data. Woot woot 
 
 df.tmp <- data.frame()
 for (f in 1:7) { 
 	if ( f < 6 ) {
-		tmp <- read.table(paste0("blast/homer/orr1d2_", f, ".vs.6.txt"), sep = "\t", skip = 1); tmp$clust <- f; tmp$samp1 <- "orr1d2"; tmp$samp2 <- "bkgd" 
+		tmp <- read.table(paste0("homer/rat/orr1d2_", f, ".vs.6.txt"), sep = "\t", skip = 1); tmp$clust <- f; tmp$samp1 <- "orr1d2"; tmp$samp2 <- "bkgd" 
 		df.tmp <- rbind(df.tmp, tmp)
-		tmp <- read.table(paste0("blast/homer/orr1d2_6.vs.", f, ".txt"), sep = "\t", skip = 1); tmp$clust <- f; tmp$samp1 <- "bkgd"; tmp$samp2 <- "orr1d2"
+		tmp <- read.table(paste0("homer/rat/orr1d2_6.vs.", f, ".txt"), sep = "\t", skip = 1); tmp$clust <- f; tmp$samp1 <- "bkgd"; tmp$samp2 <- "orr1d2"
 		df.tmp <- rbind(df.tmp, tmp) 		
 	}
 
-	tmp <- read.table(paste0("blast/homer/orr1e_", f, ".vs.8.txt"), sep = "\t", skip = 1); tmp$clust <- f; tmp$samp1 <- "orr1e"; tmp$samp2 <- "bkgd" 
+	tmp <- read.table(paste0("homer/rat/orr1e_", f, ".vs.8.txt"), sep = "\t", skip = 1); tmp$clust <- f; tmp$samp1 <- "orr1e"; tmp$samp2 <- "bkgd" 
 	df.tmp <- rbind(df.tmp, tmp)
-	tmp <- read.table(paste0("blast/homer/orr1e_8.vs.", f, ".txt"), sep = "\t", skip = 1); tmp$clust <- f; tmp$samp1 <- "bkgd"; tmp$samp2 <- "orr1e"
+	tmp <- read.table(paste0("homer/rat/orr1e_8.vs.", f, ".txt"), sep = "\t", skip = 1); tmp$clust <- f; tmp$samp1 <- "bkgd"; tmp$samp2 <- "orr1e"
 	df.tmp <- rbind(df.tmp, tmp) 		
 }
 
@@ -1880,12 +2005,12 @@ plot_grid( plotlist = g, ncol = 2, nrow = 1, labels = c("C", "D"), label_size = 
 dev.off()
 
 
+### HERE
 
 
 ##############################
 ### Supplementary Figure 1 ###
 ##############################
-
 
 # export PATH=/home/jdc397/lbzip2-2.5/bin:$PATH; module load R/4.1.3-r9; R --vanilla
 
@@ -1894,7 +2019,6 @@ suppressPackageStartupMessages({
 	library(ggbeeswarm); library(tidyr); library(ggplot2); library(RColorBrewer); library(data.table); setDTthreads(8)
 	library(dplyr); library(Biostrings); library(ggtree); library(cowplot)
 })
-
 
 ## A & B & Supplemental Table 1
 
@@ -3320,12 +3444,6 @@ g5 <- ggplot(p, aes(x = motif, y = lab, size = -log10(padj), fill = lrat)) + geo
 	theme(panel.border = element_blank(), text = element_text(size = 8, color = "black"), axis.text = element_text(size = 8, color = "black"), axis.title = element_text(size = 8, color = "black"), axis.ticks = element_blank(), legend.title = element_text(size = 8, color = "black"), legend.text = element_text(size = 8, color = "black"), legend.position = "bottom" ) + labs(x = "", y = "") +
 	labs(color = "Expressed") + guides(fill = guide_colorbar(order = 1, title.position="top", title.hjust = 0.5, barwidth = unit(0.5, "in"), barheight = unit(.1, "in")), size = guide_legend(override.aes = list(pch = 21, fill = "black", color = "transparent"), order = 2, title.position="top", title.hjust = 0.5), color = guide_legend(override.aes = list(pch = 21, fill = "white", size = 5, color = c("black", "transparent"), stroke = 1/.pt/.5, alpha = 1), order = 3, title.position="top", title.hjust = 0.5)) +
 	coord_fixed(clip = "off") + scale_x_discrete(position = "top", guide = guide_axis(angle = 45), drop = F)
-
-
-### HERE 
-# Make sure to combine all the individual components into a single R .pdf! With what happened in Figure 6, it's unlikely you'll get the violin
-# and dotplot to play nice, so perhaps break it into three separate plots... 
-
 
 
 

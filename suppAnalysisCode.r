@@ -1,6 +1,5 @@
-### Friday December 26th, 2025
-# This is a compendium of the R code used to perform any supplemental analyses, such as measuring enrichment for the CRE-gene linkages between
-# the ABC model and the ATAC-seq and RNA-seq correlation method. 
+## This is a compendium of the R code used to perform any supplemental analyses, such as measuring enrichment for the CRE-gene linkages 
+## between the ABC model and the ATAC-seq and RNA-seq correlation method. 
 
 
 
@@ -55,11 +54,18 @@ saveRDS(lut, file = "atac_rna_cor_lut.rds")
 # Remove all the objects/files you don't need anymore
 system("rm tmp int"); rm(a, int, f, df)
 
-# Now, 
-zcat /workdir/jdc397/microC/abc/immgen_cd8_rss/Predictions/EnhancerPredictionsAllPutative.tsv.gz | awk '{OFS="\t"; if ($5 != "promoter" && $28 >= 0.025) print $1, $2, $3, $4, $5, $11, $12, $16, $28}' > rss_filt_abc_links.txt
 
-cut -f1-4 atac/summit_unif_peaks_10k.txt | intersectBed -wa -wb -a stdin -b <( sed '1d' rss_filt_abc_links.txt | cut -f1-3,6,7 ) | awk '{OFS="\t"; print $1, $9, $9, $8, $5, $6, $7, $1, $2, $3, $4}' | intersectBed -wa -wb -a stdin -b refSC_mm10_tss.bed | awk '{OFS="\t"; print $8, $9, $10, $11, int(($14 + $13 + 1) / 2), $15}' | sort -u | sort -k1,1 -k2,2n -k5,5 > rss_abc_links_int_base_shuffle.txt
 
-module load R/4.1.3-r9
-Rscript --vanilla linkageShuffle.R rss_abc_links_int_base_shuffle.txt 64
+
+
+
+
+
+
+
+
+
+
+
+
 

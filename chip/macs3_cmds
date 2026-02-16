@@ -1,0 +1,6 @@
+macs3 callpeak -t chip/STAR/bmdm_pu1.dedup.bam -f AUTO -g mm -n bmdm_pu1 -q 0.05 -B --keep-dup all --call-summits --SPMR --outdir chip/macs3 2> chip/macs3/bmdm_pu1.log
+macs3 callpeak -t chip/STAR/cd8DC_irf8.dedup.bam -c chip/STAR/cd8DC_irf8_input.dedup.bam -f AUTO -g mm -n cd8DC_irf8 -q 0.05 -B --keep-dup all --call-summits --SPMR --outdir chip/macs3 2> chip/macs3/cd8DC_irf8.log
+macs3 callpeak -t chip/STAR/cd8T_runx1.dedup.bam -f AUTO -g mm -n cd8T_runx1 -q 0.05 -B --keep-dup all --call-summits --SPMR --outdir chip/macs3 2> chip/macs3/cd8T_runx1.log
+macs3 callpeak -t chip/STAR/matureB_pax5.dedup.bam -f AUTO -g mm -n matureB_pax5 -q 0.05 -B --keep-dup all --call-summits --SPMR --outdir chip/macs3 2> chip/macs3/matureB_pax5.log
+macs3 callpeak -t chip/STAR/prog_pu1.dedup.bam -c chip/STAR/prog_pu1_input.dedup.bam -f AUTO -g mm -n prog_pu1 -q 0.05 -B --keep-dup all --call-summits --SPMR --outdir chip/macs3 2> chip/macs3/prog_pu1.log
+macs3 callpeak -t chip/STAR/th17_rorg.dedup.bam -f AUTO -g mm -n th17_rorg -q 0.05 -B --keep-dup all --call-summits --SPMR --outdir chip/macs3 2> chip/macs3/th17_rorg.log

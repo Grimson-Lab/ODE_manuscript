@@ -1,0 +1,18 @@
+trim_galore -j 4 --stringency 4 --length 13 -o chip/trim chip/0_beds/prog_pu1_1.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 13 -o chip/trim chip/0_beds/prog_pu1_input_1.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 9 -o chip/trim chip/0_beds/matureB_pax5_1.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 9 -o chip/trim chip/0_beds/matureB_pax5_2.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 9 -o chip/trim chip/0_beds/matureB_pax5_3.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 9 -o chip/trim chip/0_beds/matureB_pax5_4.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 9 -o chip/trim chip/0_beds/matureB_pax5_5.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 9 -o chip/trim chip/0_beds/matureB_pax5_6.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 9 -o chip/trim chip/0_beds/matureB_pax5_7.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 9 -o chip/trim chip/0_beds/th17_rorg_1.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 9 -o chip/trim chip/0_beds/th17_rorg_2.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 13 -o chip/trim chip/0_beds/bmdm_pu1_1.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 13 -o chip/trim chip/0_beds/cd8DC_irf8_1.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 13 -o chip/trim chip/0_beds/cd8DC_irf8_2.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 13 -o chip/trim chip/0_beds/cd8DC_irf8_input_1.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 13 -o chip/trim chip/0_beds/cd8DC_irf8_input_2.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 13 --paired -o chip/trim chip/0_beds/cd8T_runx1_1a.fq.gz chip/0_beds/cd8T_runx1_1b.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null
+trim_galore -j 4 --stringency 4 --length 13 --paired -o chip/trim chip/0_beds/cd8T_runx1_2a.fq.gz chip/0_beds/cd8T_runx1_2b.fq.gz --fastqc_args "--outdir chip/trim/fastqc/" 2>/dev/null

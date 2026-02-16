@@ -107,8 +107,6 @@ echo "##############################"
 echo "Starting merging & deduping..."
 echo "##############################"
 
-# Check to see if you have any replicates for the paired-end reads. If not, don't merge. Otherwise, merge
-
 # Now that you have the aligned data, merge all of the replicates (if present) and then run Picard to remove the PCR/Optical duplicates as 
 # well as filter out all of the reads that align to the gross blacklist regions and chrM/Y
 > "${4}"/picard_cmds
@@ -134,6 +132,7 @@ rm "${4}"/STAR/*_tmp.bam "${4}"/STAR/*Aligned.sortedByCoord.out.bam "${4}"/STAR/
 
 # Remove all the original .fq.gz files and the intermediate .bam files you no longer need
 rm "${4}"/*.fq.gz; rm "${4}"/STAR/*.tab
+
 
 
 ######################################

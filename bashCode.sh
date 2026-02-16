@@ -61,10 +61,14 @@ wget https://hgdownload.soe.ucsc.edu/goldenPath/mm10/database/ncbiRefSeqCurated.
 egrep -v 'chrM|chrY' STAR_noGene_mm10/chrNameLength.txt > mm10_sizes.txt
 
 
-### Run RepeatMasker on mm10
+
+#############################
+### Run Analysis Scripts! ###
+#############################
+
+### Run RepeatMasker on mm10 (takes a few days...)
 
 sh rm/analysis_script.sh rm
-
 
 
 ### Download and analyze the ImmGen ATAC-seq
@@ -88,7 +92,8 @@ sh rna/analysis_script.sh SRAfilt.r SraRunTable_immgenRNA.tab SRA.tab rna
 
 
 ### Download and analyze the transcription factor ChIP-seq
-X
+
+sh chip/analysis_script.sh chip
 
 
 
@@ -199,47 +204,63 @@ python homer/motifCluster.py
 
 ## C
 
-# Prep the paths for deepTools!
+# Use the file with all accessible ODEs to create the foundation for the below heatmaps
+for f in {1..8}
+do 
+	if [[ f -eq 1 ]]
+	then
+		awk -v a=$f '{OFS="\t"; if ($4 == "ORR1E" && $7 == a) print}' atac/rObject_ode.txt | cut -f1-3 | uniq > tmp
+	else
+		awk -v a=$f '{OFS="\t"; if ($4 == "ORR1E" && $7 == a) print}' atac/rObject_ode.txt | cut -f1-3 | uniq >> tmp
+	fi 
+	echo "#${f}" >> tmp
+done
+cat tmp > chip/orr1e_heatmap_base.bed
+rm tmp 
+
+# Prep the paths for deepTools (which is what was done on our server. You may/may not need to do your own version of below)!
 export PATH=/programs/deeptools-3.5.5/bin:$PATH
 export PYTHONPATH=/programs/deeptools-3.5.5/lib64/python3.9/site-packages:/programs/deeptools-3.5.5/lib/python3.9/site-packages
 export TMPDIR=/workdir/$USER/tmp
 
 # Generate the heatmaps with default parameters to guide the scaling between different heatmaps
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/16_hamey_nestorowa2017/macs3/hoxb8-fl_Spi1.bw -R orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions sp_pu1.txt -o "orr1e_hoxb8-fl_Spi1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -S chip/macs3/prog_pu1.bw -R chip/orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions prog_pu1.txt -o "orr1e_prog_pu1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/7_revilla.i.domingo2012/macs3/matureB_Pax5.bw -R orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions b_pax5.txt -o "orr1e_matureB_Pax5.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -S chip/macs3/matureB_pax5.bw -R chip/orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions matureB_pax5.txt -o "orr1e_matureB_pax5.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/nRunx1.bw -R orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions tnk_runx1.txt -o "orr1e_nRunx1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -S chip/macs3/cd8T_runx1.bw -R chip/orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions cd8T_runx1.txt -o "orr1e_cd8T_runx1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/3_ciofani2012/macs3/Th17_RORg_wt.bw -R orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions ilc3_rorg.txt -o "orr1e_Th17_RORg_wt.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -S chip/macs3/th17_rorg.bw -R chip/orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions th17_rorg.txt -o "orr1e_th17_rorg.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_mfData/macs3/PU.1_NT.bw -R orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions bmm_pu1.txt -o "orr1e_PU.1_NT.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -S chip/macs3/bmdm_pu1.bw -R chip/orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions bmdm_pu1.txt -o "orr1e_bmdm_pu1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/2_csumita2019/macs3/CD8.DC_IRF8_none.bw -R orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions cd8dc_irf8.txt -o "orr1e_CD8.DC_IRF8_none.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
-
-# Now remove the temporary files
-rm orr1e_preHeatmap_pc orr1e_preHeatmap_pc.mat
+computeMatrix scale-regions -S chip/macs3/cd8DC_irf8.bw -R chip/orr1e_heatmap_base.bed -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1e_preHeatmap_pc --outFileSortedRegions cd8DC_irf8.txt -o "orr1e_cd8DC_irf8.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
 # Combine all the pdfs you made above into a single pdf for simplicity using the power of pdfunite 
-pdfunite $(ls orr1e*.pdf) comb_tf_heatmap.pdf
+# pdfunite $(ls orr1e*.pdf) comb_tf_heatmap.pdf
+
+# Remove the above .pdfs since you only need the sorted regions
 rm $(ls orr1e*.pdf)
 
 # Combine the sorted rows based on the respective ChIP-seq dataset
-awk '{OFS="\t"; if ($13 == 1 || $1 == "#chrom") print}' sp_pu1.txt > comb_chip_orr1e_sort.txt
-awk '{OFS="\t"; if ($13 == 2) print}' b_pax5.txt >> comb_chip_orr1e_sort.txt
-awk '{OFS="\t"; if ($13 == 3 || $13 == 4) print}' tnk_runx1.txt >> comb_chip_orr1e_sort.txt
-awk '{OFS="\t"; if ($13 == 5) print}' ilc3_rorg.txt >> comb_chip_orr1e_sort.txt
-awk '{OFS="\t"; if ($13 == 6) print}' bmm_pu1.txt >> comb_chip_orr1e_sort.txt
-awk '{OFS="\t"; if ($13 == 7 || $13 == 8) print}' cd8dc_irf8.txt >> comb_chip_orr1e_sort.txt
+awk '{OFS="\t"; if ($13 == 1 || $1 == "#chrom") print}' prog_pu1.txt > comb_chip_orr1e_sort.txt
+awk '{OFS="\t"; if ($13 == 2) print}' matureB_pax5.txt >> comb_chip_orr1e_sort.txt
+awk '{OFS="\t"; if ($13 == 3 || $13 == 4) print}' cd8T_runx1.txt >> comb_chip_orr1e_sort.txt
+awk '{OFS="\t"; if ($13 == 5) print}' th17_rorg.txt >> comb_chip_orr1e_sort.txt
+awk '{OFS="\t"; if ($13 == 6) print}' bmdm_pu1.txt >> comb_chip_orr1e_sort.txt
+awk '{OFS="\t"; if ($13 == 7 || $13 == 8) print}' cd8DC_irf8.txt >> comb_chip_orr1e_sort.txt
 
-computeMatrix scale-regions -R comb_chip_orr1e_sort.txt -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/16_hamey_nestorowa2017/macs3/hoxb8-fl_Spi1.bw /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/7_revilla.i.domingo2012/macs3/matureB_Pax5.bw /workdir/jdc397/1_currentWork/8_teCactus/nRunx1.bw /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/3_ciofani2012/macs3/Th17_RORg_wt.bw /workdir/jdc397/1_currentWork/8_teCactus/0_mfData/macs3/PU.1_NT.bw /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/2_csumita2019/macs3/CD8.DC_IRF8_none.bw -b 1000 -a 1000 -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1e_preHeatmap_pc --sortRegions no --zMin 0 --zMax 1.5 1 1.5 0.3 3 1 --outFileSortedRegions comb_chip_orr1e.txt -o "fig3a_orr1eIndividualScale_heatmap.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -R comb_chip_orr1e_sort.txt -S chip/macs3/prog_pu1.bw chip/macs3/matureB_pax5.bw chip/macs3/cd8T_runx1.bw chip/macs3/th17_rorg.bw chip/macs3/bmdm_pu1.bw chip/macs3/cd8DC_irf8.bw -b 1000 -a 1000 -o orr1e_preHeatmap_pc --outFileNameMatrix orr1e_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1e_preHeatmap_pc --sortRegions no --zMin 0 --zMax 1.5 1 1.5 0.3 3 1 --outFileSortedRegions chip/comb_chip_orr1e.txt -o "figures/fig2c_orr1eIndividualScale_heatmap.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+
+# Now remove the temporary files
+rm orr1e_preHeatmap_pc orr1e_preHeatmap_pc.mat prog_pu1.txt matureB_pax5.txt cd8T_runx1.txt th17_rorg.txt bmdm_pu1.txt cd8DC_irf8.txt
 
 
 
@@ -253,17 +274,17 @@ plotHeatmap -m orr1e_preHeatmap_pc --sortRegions no --zMin 0 --zMax 1.5 1 1.5 0.
 # between ODEs and the datasets that you chose for the figure. You manually input those into a file named "samps_fig3" 
 while read f
 do 
-	name=`echo $f | sed 's|.*/||g' | sed 's/_summits.bed//g'`
-	sort -k1,1 -k2,2n cpm_heatmap_ode_anno.txt | sed '1d' | cut -f1-4,7 | uniq | intersectBed -sorted -wa -c -a stdin -b $f | cut -f6 > $name
-done < samps_fig3
+	name=`echo $f | sed 's|.*/||g' | sed 's/_peaks.*//g'`
+	sort -k1,1 -k2,2n atac/rObject_ode.txt | sed '1d' | cut -f1-4,7 | uniq | intersectBed -sorted -wa -c -a stdin -b $f | cut -f6 > $name
+done < chip/samps_fig3
 
-sed '1d' cpm_heatmap_ode_anno.txt | sort -k1,1 -k2,2n | cut -f1-5,7 | uniq > tmp; > figure3_chip_names
+sed '1d' atac/rObject_ode.txt | sort -k1,1 -k2,2n | cut -f1-5,7 | uniq > tmp; > chip/figure3_chip_names
 while read f
 do 
-	name=`echo $f | sed 's|.*/||g' | sed 's/_summits.bed//g'`; echo $name >> figure3_chip_names
+	name=`echo $f | sed 's|.*/||g' | sed 's/_peaks.*//g'`; echo $name >> chip/figure3_chip_names
 	paste tmp $name > tmp2; cat tmp2 > tmp; rm $name
-done < samps_fig3
-cat tmp > figure3_ode_int_chip_vals.txt; rm tmp tmp2
+done < chip/samps_fig3
+cat tmp > chip/figure3_ode_int_chip_vals.txt; rm tmp tmp2
 
 
 ## F
@@ -292,6 +313,66 @@ awk '{OFS="\t"; if ($4 == "ORR1E" || $4 == "ORR1D2") print $1, $2 - 1, $3, $1 ":
 
 
 
+################
+### Figure 6 ###
+################
+
+## B
+
+rsync rsync://hgdownload.soe.ucsc.edu/goldenPath/rn7/bigZips/rn7.fa.gz orthology/.; gunzip orthology/rn7.fa.gz
+makeblastdb -in orthology/rn7.fa -blastdb_version 5 -title "rn7" -dbtype nucl &
+
+# First, slop the output, this time by 2kb on either side. Then, blast it!
+slopBed -b 1000 -i <( sed '1d' atac/rObject_ode.txt | sort -k1,1 -k2,2n --parallel=6 -S 10% | intersectBed -sorted -wa -f .95 -a rm/mm10_repeatMasker.txt.gz -b stdin | uniq | awk '{OFS="\t"; print $1, $2 - 1, $3, $1 ":" $2 "-" $3 "|" $4, $5, $6}' ) -g mm10_sizes.txt | sort -k1,1 -k2,2n > ode_s1000.bed 
+fastaFromBed -nameOnly -s -fi mm10.fa -bed ode_s1000.bed | sed 's/(.*//' > ode_s1000.fa
+blastn -num_threads 64 -evalue 1e-30 -qcov_hsp_perc 15 -outfmt "6 qseqid sseqid pident nident length mismatch qstart qend sstart send qlen evalue bitscore" -query ode_s1000.fa -db orthology/rn7.fa -out orthology/rn7_1000_blast_ode.txt
+
+# Now that all of the blasts were run, compile them together into a single object for easy(ish) loading into R
+awk '{OFS="\t"; if ( $10 > $9 ) { print $0, "+" } else { print $1, $2, $3, $4, $5, $6, $7, $8, $10, $9, $11, $12, $13, "-" } }' orthology/rn7_1000_blast_ode.txt | sort -k2,2 -k9,9n --parallel=32 -S 20% > tmp_sort
+Rscript --vanilla scripts/blastMerge.r tmp_sort orthology/rn7_1000_blast_ode_output.txt
+
+# Remove the tmp file and all other superfluous files
+rm tmp_sort ode_s1000.bed ode_s1000.fa
+
+# To prep for the alignments, get those going in R
+awk '{OFS="\t"; print $2, $9, $10, $1, $3, $14, $7, $8}' orthology/rn7_1000_blast_ode_output.txt | sort -k1,1 -k2,2n > orthology/ode_blast_s1000.bed
+fastaFromBed -nameOnly -s -fi orthology/rn7.fa -bed orthology/ode_blast_s1000.bed | sed 's/(.*//' > orthology/ode_blast_s1000.fa
+
+### NOTE: R code found in Figure 6B generates the relevant .fa files that the below code uses and are provided by yours truly 
+
+# Add HOMER to your path
+export PATH=/workdir/jdc397/homer/bin:$PATH
+
+# Iterate through the maximal number of groups based on whether there are elements within them. Yeah
+for i in {1..8}
+do
+	# Start with ORR1E
+	for j in {1..8}
+	do
+		if [[ $j -ne $i ]]
+		then
+			homer2 known -i orthology/ORR1E_blast_cpm.c_$i.fa -b orthology/ORR1E_blast_cpm.c_$j.fa -o homer/rat/orr1e_km_$i.vs.$j.txt -m homer/homerFilt.motifs -p 24
+		else
+			echo "Skipping group $i & $j for ORR1E"
+		fi
+	done
+done
+
+
+# Now for ORR1D2
+for i in {1..6}
+do
+	for j in {1..6}
+	do
+		if [[ $j -ne $i ]]
+		then
+			homer2 known -i orthology/ORR1D2_blast_cpm.c_$i.fa -b orthology/ORR1D2_blast_cpm.c_$j.fa -o homer/rat/orr1d2_km_$i.vs.$j.txt -m homer/homerFilt.motifs -p 24
+		else
+			echo "Skipping group $i & $j for ORR1D2"
+		fi
+	done
+done
+
 
 
 #############################
@@ -300,131 +381,90 @@ awk '{OFS="\t"; if ($4 == "ORR1E" || $4 == "ORR1D2") print $1, $2 - 1, $3, $1 ":
 
 ## E
 
+# Get the list of ORR1D2s for the below heatmap
+for f in {1..6}
+do 
+	if [[ f -eq 1 ]]
+	then
+		awk -v a=$f '{OFS="\t"; if ($4 == "ORR1D2" && $7 == a) print}' atac/rObject_ode.txt | cut -f1-3 | uniq > tmp
+	else
+		awk -v a=$f '{OFS="\t"; if ($4 == "ORR1D2" && $7 == a) print}' atac/rObject_ode.txt | cut -f1-3 | uniq >> tmp
+	fi 
+	echo "#${f}" >> tmp
+done
+cat tmp > chip/orr1d2_heatmap_base.bed
+rm tmp
+
 # Prep the paths for deepTools!
 export PATH=/programs/deeptools-3.5.5/bin:$PATH
 export PYTHONPATH=/programs/deeptools-3.5.5/lib64/python3.9/site-packages:/programs/deeptools-3.5.5/lib/python3.9/site-packages
 export TMPDIR=/workdir/$USER/tmp
 
-# Generate the heatmaps with default parameters for ORR1D2 loci to guide the scaling between different heatmaps
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/16_hamey_nestorowa2017/macs3/hoxb8-fl_Spi1.bw -R orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions sp_pu1.txt -o "orr1d2_hoxb8-fl_Spi1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+# Generate the heatmaps with default parameters to guide the scaling between different heatmaps
+computeMatrix scale-regions -S chip/macs3/prog_pu1.bw -R chip/orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions prog_pu1.txt -o "orr1d2_prog_pu1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/7_revilla.i.domingo2012/macs3/matureB_Pax5.bw -R orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions b_pax5.txt -o "orr1d2_matureB_Pax5.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -S chip/macs3/matureB_pax5.bw -R chip/orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions matureB_pax5.txt -o "orr1d2_matureB_pax5.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/nRunx1.bw -R orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions tnk_runx1.txt -o "orr1d2_nRunx1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -S chip/macs3/cd8T_runx1.bw -R chip/orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions cd8T_runx1.txt -o "orr1d2_cd8T_runx1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/3_ciofani2012/macs3/Th17_RORg_wt.bw -R orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions ilc3_rorg.txt -o "orr1d2_Th17_RORg_wt.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -S chip/macs3/th17_rorg.bw -R chip/orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions th17_rorg.txt -o "orr1d2_th17_rorg.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_mfData/macs3/PU.1_NT.bw -R orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions bmm_pu1.txt -o "orr1d2_PU.1_NT.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -S chip/macs3/bmdm_pu1.bw -R chip/orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions bmdm_pu1.txt -o "orr1d2_bmdm_pu1.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-computeMatrix scale-regions -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/2_csumita2019/macs3/CD8.DC_IRF8_none.bw -R orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions cd8dc_irf8.txt -o "orr1d2_CD8.DC_IRF8_none.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
-
-# Now remove the temporary files
-rm orr1d2_preHeatmap_pc orr1d2_preHeatmap_pc.mat
+computeMatrix scale-regions -S chip/macs3/cd8DC_irf8.bw -R chip/orr1d2_heatmap_base.bed -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1d2_preHeatmap_pc --outFileSortedRegions cd8DC_irf8.txt -o "orr1d2_cd8DC_irf8.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
 # Combine all the pdfs you made above into a single pdf for simplicity using the power of pdfunite 
-pdfunite $(ls orr1d2*.pdf) comb_orr1d2_tf_heatmap.pdf
+# pdfunite $(ls orr1d2*.pdf) comb_tf_heatmap.pdf
+
+# Remove the above .pdfs since you only need the sorted regions
 rm $(ls orr1d2*.pdf)
 
 # Combine the sorted rows based on the respective ChIP-seq dataset
-awk '{OFS="\t"; if ($13 == 1 || $1 == "#chrom") print}' sp_pu1.txt > comb_chip_orr1d2_sort.txt
-awk '{OFS="\t"; if ($13 == 2) print}' b_pax5.txt >> comb_chip_orr1d2_sort.txt
-awk '{OFS="\t"; if ($13 == 3 || $13 == 4) print}' tnk_runx1.txt >> comb_chip_orr1d2_sort.txt
-awk '{OFS="\t"; if ($13 == 5) print}' bmm_pu1.txt >> comb_chip_orr1d2_sort.txt
-awk '{OFS="\t"; if ($13 == 6) print}' cd8dc_irf8.txt >> comb_chip_orr1d2_sort.txt
+awk '{OFS="\t"; if ($13 == 1 || $1 == "#chrom") print}' prog_pu1.txt > comb_chip_orr1d2_sort.txt
+awk '{OFS="\t"; if ($13 == 2) print}' matureB_pax5.txt >> comb_chip_orr1d2_sort.txt
+awk '{OFS="\t"; if ($13 == 3 || $13 == 4) print}' cd8T_runx1.txt >> comb_chip_orr1d2_sort.txt
+awk '{OFS="\t"; if ($13 == 5) print}' th17_rorg.txt >> comb_chip_orr1d2_sort.txt
+awk '{OFS="\t"; if ($13 == 6) print}' bmdm_pu1.txt >> comb_chip_orr1d2_sort.txt
+awk '{OFS="\t"; if ($13 == 7 || $13 == 8) print}' cd8DC_irf8.txt >> comb_chip_orr1d2_sort.txt
 
-computeMatrix scale-regions -R comb_chip_orr1d2_sort.txt -S /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/16_hamey_nestorowa2017/macs3/hoxb8-fl_Spi1.bw /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/7_revilla.i.domingo2012/macs3/matureB_Pax5.bw /workdir/jdc397/1_currentWork/8_teCactus/nRunx1.bw /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/3_ciofani2012/macs3/Th17_RORg_wt.bw /workdir/jdc397/1_currentWork/8_teCactus/0_mfData/macs3/PU.1_NT.bw /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/2_csumita2019/macs3/CD8.DC_IRF8_none.bw -b 1000 -a 1000 -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
-plotHeatmap -m orr1d2_preHeatmap_pc --sortRegions no --zMin 0 --zMax 1.5 1 1.5 0.4 3 1 --outFileSortedRegions comb_chip_orr1d2.txt -o "sfig4a_orr1d2IndividualScale_heatmap.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
+computeMatrix scale-regions -R comb_chip_orr1d2_sort.txt -S chip/macs3/prog_pu1.bw chip/macs3/matureB_pax5.bw chip/macs3/cd8T_runx1.bw chip/macs3/th17_rorg.bw chip/macs3/bmdm_pu1.bw chip/macs3/cd8DC_irf8.bw -b 1000 -a 1000 -o orr1d2_preHeatmap_pc --outFileNameMatrix orr1d2_preHeatmap_pc.mat -p 24
+plotHeatmap -m orr1d2_preHeatmap_pc --sortRegions no --zMin 0 --zMax 1.5 1 1.5 0.3 3 1 --outFileSortedRegions chip/comb_chip_orr1d2.txt -o "figures/fig2c_orr1d2IndividualScale_heatmap.pdf" --colorMap "Purples" --startLabel "5'" --endLabel "3'" --legendLocation "none" --whatToShow "heatmap and colorbar"
 
-
-
-
-
-
-# With the above complete, there is no need to keep a duplicate of the mm10 genome .fa file. Remove it
-# rm mm10.fa
+# Now remove the temporary files
+rm orr1d2_preHeatmap_pc orr1d2_preHeatmap_pc.mat prog_pu1.txt matureB_pax5.txt cd8T_runx1.txt th17_rorg.txt bmdm_pu1.txt cd8DC_irf8.txt
 
 
 
+
+
+
+
+
+
+
+
+### Updating is still in progress...
 
 ## Determine enrichment for the overlap of ABC-called CRE-gene linkages with the ATAC-seq and RNA-seq correlation linkages
 
-zcat /workdir/jdc397/microC/abc/immgen_cd8_rss/Predictions/EnhancerPredictionsAllPutative.tsv.gz | awk '{OFS="\t"; if ($5 != "promoter" && $28 >= 0.025) print $1, $2, $3, $4, $5, $11, $12, $16, $28}' > rss_filt_abc_links.txt
+# zcat /workdir/jdc397/microC/abc/immgen_cd8_rss/Predictions/EnhancerPredictionsAllPutative.tsv.gz | awk '{OFS="\t"; if ($5 != "promoter" && $28 >= 0.025) print $1, $2, $3, $4, $5, $11, $12, $16, $28}' > rss_filt_abc_links.txt
 
-cut -f1-4 atac/summit_unif_peaks_10k.txt | intersectBed -wa -wb -a stdin -b <( sed '1d' rss_filt_abc_links.txt | cut -f1-3,6,7 ) | awk '{OFS="\t"; print $1, $9, $9, $8, $5, $6, $7, $1, $2, $3, $4}' | intersectBed -wa -wb -a stdin -b refSC_mm10_tss.bed | awk '{OFS="\t"; print $8, $9, $10, $11, int(($14 + $13 + 1) / 2), $15}' | sort -u | sort -k1,1 -k2,2n -k5,5 > rss_abc_links_int_base_shuffle.txt
+# cut -f1-4 atac/summit_unif_peaks_10k.txt | intersectBed -wa -wb -a stdin -b <( sed '1d' rss_filt_abc_links.txt | cut -f1-3,6,7 ) | awk '{OFS="\t"; print $1, $9, $9, $8, $5, $6, $7, $1, $2, $3, $4}' | intersectBed -wa -wb -a stdin -b refSC_mm10_tss.bed | awk '{OFS="\t"; print $8, $9, $10, $11, int(($14 + $13 + 1) / 2), $15}' | sort -u | sort -k1,1 -k2,2n -k5,5 > rss_abc_links_int_base_shuffle.txt
 
 module load R/4.1.3-r9
 Rscript --vanilla linkageShuffle.R rss_abc_links_int_base_shuffle.txt 64
-
-
-
-
-
 
 # Code you used to go from the ABC model predictions to a filtered list of interactions
 zcat /workdir/jdc397/microC/abc/immgen_cd8_rss/Predictions/EnhancerPredictionsAllPutative.tsv.gz | awk '{OFS="\t"; if ($5 != "promoter" && $28 >= 0.025) print $1, $2, $3, $4, $5, $11, $12, $16, $28}' > rss_filt_abc_links.txt
 
 # To load in all the filtered contacts regardless of ODE intersection, get the below file generated
 zcat microc/rss_filt_abc_links.txt.gz | intersectBed -wa -wb -a atac/summit_unif_peaks.bed -b stdin | awk '{OFS="\t"; print $1, $2, $3, $4, $5, $6, $7, $8, $10, $12, $13}' | pigz -p 6 -c > microc/rss_abc_peak_int_all.txt.gz
-
-
-
-
-
-# Get all of the SRRs for each of the datasets you downloaded across all data
-echo -e "SRR/Download\tData\tLabel\tSource" > supData_1.txt
-
-## Immgen ATAC-seq
-awk '{OFS="\t"; FS="\t"; print $1, $2, $29, "Immgen"}' atac/SraRunTable_immgenATAC.tab | sed '1d' >> supData_1.txt
-
-## Immgen RNA-seq
-awk '{OFS="\t"; FS="\t"; print $1, $3, $32, "Immgen"}' /workdir/jdc397/1_currentWork/8_teCactus/00_clean/1_data/3_rna/SraRunTable_immgenRNA.tab | sed '1d' >> supData_1.txt
-
-## ENCODE DNAse
-awk -F'\t' '{OFS="\t"; gsub(" ","_",$11); if ($2 == "bed narrowPeak") print $48, "DNase-seq-peaks", $11}' /workdir/jdc397/1_currentWork/8_teCactus/00_clean/1_data/2_dnase/DNase.metadata | awk -F' ' '{x[$3]++; print $0 "_" x[$3]}' | awk '{OFS="\t"; print $0, "ENCODE"}' >> supData_1.txt
-
-## ENCODE ATAC-seq
-sed '1d' /workdir/jdc397/1_currentWork/8_teCactus/00_clean/1_data/1_atac/encode/SRA.tab | awk '{OFS="\t"; x[$3]++; print $1, "ATAC-seq", $3 "_" x[$3], "ENCODE"}' >> supData_1.txt
-
-## ChIP-seq datasets
-# Progenitor PU.1
-echo -e "SRR3883424\tChIP-seq\tPU.1\thttps://pmc.ncbi.nlm.nih.gov/articles/PMC5468644/" >> supData_1.txt
-
-# B Pax5
-grep "mature" /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/7_revilla.i.domingo2012/SRA.tab | cut -f1 | awk '{OFS="\t"; print $1, "ChIP-seq", "Pax5", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3400013/"}' >> supData_1.txt
-
-# CD8+ T cell Runx1
-echo -e "SRR13700681\tChIP-seq\tRunx1\thttps://www.nature.com/articles/s41590-021-01086-x" >> supData_1.txt
-echo -e "SRR13700682\tChIP-seq\tRunx1\thttps://www.nature.com/articles/s41590-021-01086-x" >> supData_1.txt
-
-# Th17 RORg
-awk '{OFS="\t"; if ($2 == "Th17" && $3 == "RORg" && $4 == "wt") print $1, "ChIP-seq", $3, "https://pmc.ncbi.nlm.nih.gov/articles/PMC3503487/"}' /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/3_ciofani2012/SRA.tab >> supData_1.txt
-
-# MF PU.1
-awk '{FS="\t"; OFS="\t"; if ($2 ~ "PU.1" && $29 == "C57BL/6" && $30 ~ "No") print $1, "ChIP-seq", "PU.1", "https://genesdev.cshlp.org/content/29/4/394"}' /workdir/jdc397/1_currentWork/8_teCactus/0_mfData/mancino2015_MF_chip_SRA.tab >> supData_1.txt
-
-# CD8+ DC IRF8
-awk '{OFS="\t"; if ($3 == "IRF8" && $6 == "none") print $1, "ChIP-seq", $3, "https://academic.oup.com/nar/article/48/2/589/5651321"}' /workdir/jdc397/1_currentWork/8_teCactus/0_chipData/2_csumita2019/SRA.tab >> supData_1.txt
-
-# CD8+ T cell K27ac
-echo -e "SRR6847154\tChIP-seq\tK27ac\tKaech" >> supData_1.txt
-echo -e "SRR6847155\tChIP-seq\tK27ac\tKaech" >> supData_1.txt
-echo -e "SRR13422702\tChIP-seq\tK27ac\thttps://pmc.ncbi.nlm.nih.gov/articles/PMC8494933/" >> supData_1.txt
-echo -e "SRR13422704\tChIP-seq\tK27ac\thttps://pmc.ncbi.nlm.nih.gov/articles/PMC8494933/" >> supData_1.txt
-echo -e "SRR13422705\tChIP-seq\tK27ac\thttps://pmc.ncbi.nlm.nih.gov/articles/PMC8494933/" >> supData_1.txt
-echo -e "SRR13422706\tChIP-seq\tK27ac\thttps://pmc.ncbi.nlm.nih.gov/articles/PMC8494933/" >> supData_1.txt
-echo -e "SRR13422707\tChIP-seq\tK27ac\thttps://pmc.ncbi.nlm.nih.gov/articles/PMC8494933/" >> supData_1.txt
-echo -e "SRR13422708\tChIP-seq\tK27ac\thttps://pmc.ncbi.nlm.nih.gov/articles/PMC8494933/" >> supData_1.txt
-
-
-
-
-### NOTE: The below code still needs to be changed to better relate to the organizational structure with the new code. Good luck
 
 
 

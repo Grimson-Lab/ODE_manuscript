@@ -1,0 +1,18 @@
+fasterq-dump SRR3883424 -o chip/0_beds/prog_pu1_1.fq; pigz -p 4 chip/0_beds/prog_pu1_1.fq
+fasterq-dump SRR3883419 -o chip/0_beds/prog_pu1_input_1.fq; pigz -p 4 chip/0_beds/prog_pu1_input_1.fq
+fasterq-dump SRR499700 -o chip/0_beds/matureB_pax5_1.fq; pigz -p 4 chip/0_beds/matureB_pax5_1.fq
+fasterq-dump SRR499701 -o chip/0_beds/matureB_pax5_2.fq; pigz -p 4 chip/0_beds/matureB_pax5_2.fq
+fasterq-dump SRR499702 -o chip/0_beds/matureB_pax5_3.fq; pigz -p 4 chip/0_beds/matureB_pax5_3.fq
+fasterq-dump SRR499703 -o chip/0_beds/matureB_pax5_4.fq; pigz -p 4 chip/0_beds/matureB_pax5_4.fq
+fasterq-dump SRR499704 -o chip/0_beds/matureB_pax5_5.fq; pigz -p 4 chip/0_beds/matureB_pax5_5.fq
+fasterq-dump SRR499705 -o chip/0_beds/matureB_pax5_6.fq; pigz -p 4 chip/0_beds/matureB_pax5_6.fq
+fasterq-dump SRR499706 -o chip/0_beds/matureB_pax5_7.fq; pigz -p 4 chip/0_beds/matureB_pax5_7.fq
+fasterq-dump SRR571615 -o chip/0_beds/th17_rorg_1.fq; pigz -p 4 chip/0_beds/th17_rorg_1.fq
+fasterq-dump SRR571616 -o chip/0_beds/th17_rorg_2.fq; pigz -p 4 chip/0_beds/th17_rorg_2.fq
+fasterq-dump SRR1202043 -o chip/0_beds/bmdm_pu1_1.fq; pigz -p 4 chip/0_beds/bmdm_pu1_1.fq
+fasterq-dump SRR6278334 -o chip/0_beds/cd8DC_irf8_1.fq; pigz -p 4 chip/0_beds/cd8DC_irf8_1.fq
+fasterq-dump SRR6278335 -o chip/0_beds/cd8DC_irf8_2.fq; pigz -p 4 chip/0_beds/cd8DC_irf8_2.fq
+fasterq-dump SRR6278321 -o chip/0_beds/cd8DC_irf8_input_1.fq; pigz -p 4 chip/0_beds/cd8DC_irf8_input_1.fq
+fasterq-dump SRR6278322 -o chip/0_beds/cd8DC_irf8_input_2.fq; pigz -p 4 chip/0_beds/cd8DC_irf8_input_2.fq
+fasterq-dump SRR13700681 -S; pigz -c -p 4 SRR13700681_1.fastq > chip/0_beds/cd8T_runx1_1a.fq.gz; pigz -c -p 4 SRR13700681_2.fastq > chip/0_beds/cd8T_runx1_1b.fq.gz; rm SRR13700681_1.fastq SRR13700681_2.fastq
+fasterq-dump SRR13700682 -S; pigz -c -p 4 SRR13700682_1.fastq > chip/0_beds/cd8T_runx1_2a.fq.gz; pigz -c -p 4 SRR13700682_2.fastq > chip/0_beds/cd8T_runx1_2b.fq.gz; rm SRR13700682_1.fastq SRR13700682_2.fastq
